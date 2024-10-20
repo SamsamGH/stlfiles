@@ -1,0 +1,57 @@
+# Base image with Ubuntu 22.04
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    g++ \
+    cmake \
+    zlib1g-dev \
+    libopenmpi-dev \
+    openmpi-bin \
+    libboost-all-dev \
+    libfftw3-dev \
+    libeigen3-dev \
+    libscotch-dev \
+    libyaml-cpp-dev \
+    python3 \
+    python3-pip \
+    git \
+    wget \
+    libreadline-dev \
+    qtbase5-dev \
+    flex \
+    bison \
+    sudo \
+    libncurses5-dev
+
+# Install OpenFOAM-6
+RUN git clone https://github.com/OpenFOAM/OpenFOAM-6.git /opt/OpenFOAM-6 && \
+    git clone https://github.com/OpenFOAM/ThirdParty-6.git /opt/ThirdParty-6 && \
+    cd /opt/OpenFOAM-6 && \
+    source etc/bashrc && \
+    ./Allwmake -j $(nproc)
+
+# Set OpenFOAM environment variables
+RUN echo "source /opt/OpenFOAM-6/etc/bashrc" >> ~/.bashrc
+ENV PATH=$PATH:/opt/OpenFOAM-6/bin
+
+# Install LIGGGHTS-PFM
+RUN git clone -b stable https://github.com/CFDEMproject/LIGGGHTS-PFM.git /opt/LIGGGHTS-PFM && \
+    cd /opt/LIGGGHTS-PFM/src && \
+    make auto
+
+# Set LIGGGHTS environment variables
+ENV PATH=$PATH:/opt/LIGGGHTS-PFM/src
+
+# Install CFDEMcoupling-PFM
+RUN git clone https://github.com/CFDEMproject/CFDEMcoupling-PFM.git /opt/CFDEMcoupling-PFM && \
+    cd /opt/CFDEMcoupling-PFM && \
+    ./Allwmake
+
+# Set CFDEMcoupling environment variables
+RUN echo "source /opt/CFDEMcoupling-PFM/etc/bashrc" >> ~/.bashrc
+ENV PATH=$PATH:/opt/CFDEMcoupling-PFM/bin
+
+# Create entry point
+CMD ["/bin/bash"]
